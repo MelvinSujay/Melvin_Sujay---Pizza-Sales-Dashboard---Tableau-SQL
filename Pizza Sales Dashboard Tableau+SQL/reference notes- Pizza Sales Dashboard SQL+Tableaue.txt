@@ -1,0 +1,223 @@
+Pizza Sales Dashboard using SQL & Tableau
+
+-install tableau, MS SQL and MS SQL server management studio.
+open SQL server management studio and name the server as your device name\SQLEXPRESS, (MELVIN-S-ACER-N\SQLEXPRESS) and leave other options as it is and connect.
+
+once connected click on database- new database and name it, here its Pizza DB.  
+click on pizza db- tasks- import flat file- and browse to the csv file location to add and click on next, in modify columns you can change few datatypes of nvarchar(50) to varchar(50) and only in pizza ingredients change to varchar(50) and pizza_id, order_id from smallint to int and click next.
+
+the imported file will be in the Pizza DB- Tables- dbo.pizza_sales.
+
+click on Pizza DB and new query.
+to check the data type query- select * from pizza_sales
+it will show the entire csv file.
+
+- KPI's requirement
+total revenue sql query- SELECT SUM(total_price) AS TOTAL_Revenue from pizza_sales
+save the query and the output in a document for reference or client requirement.
+
+average order value- select sum(total_price) / count(distinct order_id) as Avg_Order_Value from pizza_sales
+
+total pizza sold- select sum(quantity) as Total_Pizza_Sold from pizza_sales
+
+total orders- select count(distinct order_id) as Total_orders from pizza_sales
+
+average pizzas per order- select cast(cast(sum(quantity) as DECIMAL(10,2)) / 
+cast(count(distinct order_id) as DECIMAL(10,2)) as DECIMAL(10,2)) as Avg_Pizzas_Per_order from pizza_sales
+
+--- prb stm chart req
+
+- hourly trend for total pizzas sold
+
+select datepart(hour, order_time) as order_hour, sum(quantity) as Total_pizzas_sold
+from pizza_sales
+group by DATEPART(hour, order_time)
+order by DATEPART(hour, order_time)
+
+---weekly trend for total orders
+select datepart(ISO_WEEK, order_date) as week_number, year(order_date) as order_year,
+count(distinct order_id) as Total_orders from pizza_sales
+group by DATEPART(iso_week, order_date), year(order_date)
+order by DATEPART(iso_week, order_date), year(order_date)
+
+--% of Sales by Pizza Category
+SELECT 
+    pizza_category, 
+    CAST(SUM(total_price) AS DECIMAL(10,2)) AS Total_Sales, 
+    CAST(SUM(total_price) * 100 / (SELECT SUM(total_price) FROM pizza_sales WHERE MONTH(order_date) = 1) AS DECIMAL(10,2)) AS PCT
+FROM 
+    pizza_sales
+WHERE 
+    MONTH(order_date) = 1
+GROUP BY 
+    pizza_category;
+
+--% of Sales by Pizza size
+SELECT 
+    pizza_size, 
+    CAST(SUM(total_price) AS DECIMAL(10,2)) AS Total_Sales, 
+    CAST(SUM(total_price) * 100 / (SELECT SUM(total_price) FROM pizza_sales WHERE MONTH(order_date) = 1) AS DECIMAL(10,2)) AS PCT
+FROM 
+    pizza_sales
+WHERE 
+    MONTH(order_date) = 1
+GROUP BY 
+    pizza_size;
+
+SELECT pizza_size, CAST(SUM(total_price) AS DECIMAL(10,2)) as total_revenue,
+CAST(SUM(total_price) * 100 / (SELECT SUM(total_price) from pizza_sales) AS DECIMAL(10,2)) AS PCT
+FROM pizza_sales
+GROUP BY pizza_size
+ORDER BY pizza_size
+
+--Total Pizzas Sold by Pizza Category
+SELECT pizza_category, SUM(quantity) as Total_Quantity_Sold
+FROM pizza_sales
+WHERE MONTH(order_date) = 2
+GROUP BY pizza_category
+ORDER BY Total_Quantity_Sold DESC
+
+--Top 5 Pizzas by Revenue
+select top 5 pizza_name, sum(total_price) as Total_Revenue from pizza_sales
+group by pizza_name
+order by Total_Revenue desc
+
+--Bottom 5 Pizzas by Revenue
+select top 5 pizza_name, sum(total_price) as Total_Revenue from pizza_sales
+group by pizza_name
+order by Total_Revenue asc
+
+--Top 5 Pizzas by Quantity
+SELECT Top 5 pizza_name, SUM(quantity) AS Total_Pizza_Sold
+FROM pizza_sales
+GROUP BY pizza_name
+ORDER BY Total_Pizza_Sold DESC
+
+--Bottom 5 Pizzas by Quantity
+SELECT TOP 5 pizza_name, SUM(quantity) AS Total_Pizza_Sold
+FROM pizza_sales
+GROUP BY pizza_name
+ORDER BY Total_Pizza_Sold ASC
+
+--Top 5 Pizzas by Total Orders
+SELECT Top 5 pizza_name, COUNT(DISTINCT order_id) AS Total_Orders
+FROM pizza_sales
+GROUP BY pizza_name
+ORDER BY Total_Orders DESC
+
+--Bottom 5 Pizzas by Total Orders
+SELECT Top 5 pizza_name, COUNT(DISTINCT order_id) AS Total_Orders
+FROM pizza_sales
+GROUP BY pizza_name
+ORDER BY Total_Orders ASC
+
+-- now open tableau, go to connect and connect the Microsoft sql server to get the data.
+here, since i am using tableau public it doesn't give me that option so i am using excel file data in tableau.
+
+-- now start working on the kpi's
+create a calculated field - by going to analysis or the down arrow near the left search box or by right clicking on and field from the table.
+
+create a calculated field as total revenue - sum([total price]) 
+
+total orders - countd([order id]) 
+avg order value - [Total Revenue] / [Total Orders]
+
+total pizzas sold - SUM([Quantity])
+
+Avg Pizzas Per Order - [Total Pizzas Sold] / [Total Orders]
+
+-- add measure names to columns and measure values to text and change to entire view.
+double click on measure names unselect count of pizza sales, quantity, total price, unit price and click apply and ok.
+arrange AGG measure values according to kpi's -total revenue, avg order value, total pizzas sold, total orders, avg pizzas per.
+
+make total revenue to dollar right click on agg total revenue -  format - numbers pane - currency custom and edit to dollar and units in thousand.
+same editing for other agg values as required (number custom for others).
+
+text - align centre - font editing
+rename sheet1 to KPI Banner
+
+-- open dashboard adjust size- 1600 px width, 900 px height.
+from the bottom left in objects keep in tiled view and click image to add bg.
+change to floating and from sheets in the left side drag and place kpi banner where necessary.
+TEXT formatting / editing
+add images needed
+
+-- new sheet rename it as Hourly Trend For Total Pizzas Sold
+add order time to column and change it to hour, total pizzas sold to rows and change to bar chart.
+add pizza category to color and necessary editing. 
+add total pizzas sold to rows again and in marks there will be two agg for total pizza, select second and change to gantt bar. right click on the second total pizzas in rows and select dual axis, sync both axis.
+in rows the second agg ctrl + drag to label in second agg in marks.
+do necessary changes and editing and then place it in dashboard.
+
+-- new sheet rename it as Weekly Trend For Total Orders
+add order date to column, - change to week by custom - iso week numbers.
+total orders to rows, add another total orders to row make it a line chart and then dual axis , go to analytics - average line and add to graph. edit avg to name it as avg- , and in custom avg-<value>
+
+-- new sheet - percentage of sales by pizza category
+select pie chart.
+add pizza category to colors.
+double click o rows and type avg(0) (create two like this and then in marks remove the pizza category from the second one).
+ 
+add total rvenue to angle, pizza cat in label, total rev in label, right click and quick calculation and percentage of total, total rev in label, edit it to dollars, decimal point, all necessary changes.
+
+-- Percentage of Sales by Pizza Size
+create calculated field max - avg(1) and another as min - avg(0)
+in pizza size edit aliases and rename all the l,m,s,xl,xxl to actual full names.
+add pizza sales to rows and measure values to columns and from that select only min and max.
+from filters ctrl+drag measure names to path and increase size
+
+add total revenue to columns and change to shape chart and select dual axis to merge both charts, in columns right click on total rev- quick table cal- percentage total, sync axis, do necessary editing.
+
+-- Total Orders & Pizzas Sold by Pizza Category
+add pizza cat to rows
+create new calculated - name it as neg total pizzas sold- -[total pizzas sold]
+measure values to rows - select only total orders and neg total pizzas sold
+measure names to color, in measure values agg of neg total - format - numbers- custom - type 0,0;(0,0) to remove the negative sign ,
+
+-- adding filters 
+in hourly trend sheet ,
+add pizza category to filters - use all- ok , in filters right click - apply to worksheet- all using this datasource.
+add order date - range of date- right click - apply to worksheet- all using this datasource.
+ 
+in dashboard - hourly trend - down arrow - filters- order date , pizza category- necessary editing.
+ to make interactive click on use filter in hourly trend, percentage sales by cat, perc sales by pizza size.
+
+-- new sheet - Date Range
+create calculated field- max date - MAX([Order Date])
+another one - min date - MIN([Order Date])
+
+add both to text and do necessary editing
+add to dashboard
+
+-- rename dashboard to Home
+duplicate this dashboard and name it as best/ worst sellers
+remove only the charts.
+new sheet rename it as Top 5 Pizzas by Revenue
+add pizza name in rows, total rev in colmns
+ctrl+drag pizza name to filters , select - top- by field- 5- apply- ok.
+sort asc to desc
+format to dollar, and necessary editing and add to dashboard.
+
+-- duplicate sheet and rename to Bottom 5 Pizzas by Revenue
+pizza name- filters , select - top- by field- 5- apply- ok.
+sort des to asc
+add to dashboard.
+
+-- duplicate top 5 pizzaz by revenue sheet and rename it as Top 5 Pizzas by Total Pizzas Sold
+replace total rev in columns to total pizzas sold and add it to color and label and do necessary editing and add to dashboard.
+
+-- duplicate the previous sheet and rename to Bottom 5 Pizzas by Total Pizzas Sold
+change to bottom 5 
+
+-- duplicate top 5 of total pizza sold and rename to Top 5 Pizzas by Total Orders
+add total orders to columns and labels and do necessary editing.
+
+-- duplicate the previous sheet to bottom 5 pizzas by total orders
+change to bottom 5
+
+in filters in order date and pizza category always add to context whenever using top 5 and bottom 5.
+
+-- add navigation button from objects on the bottom left side for both the sheets and name it accordingly.
+navigation - down arrow - edit button- name, sheet option, other necessary editing.
+
+done.......
